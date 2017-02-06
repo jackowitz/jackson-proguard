@@ -1,0 +1,35 @@
+# Point ProGuard to the Java Runtime classes.
+-libraryjars  <java.home>/lib/rt.jar
+
+# Standard/recommended Jackson configuration.
+# Jackson needs the annotations (and friends) to work properly.
+-keepattributes *Annotation*,EnclosingMethod,InnerClasses,Signature
+# Jackson breaks without its own enums kept around.
+-keepclassmembers enum com.fasterxml.jackson.** {
+  public static **[] values();
+  public static ** valueOf(java.lang.String);
+}
+
+# So we have a chance at seeing what's going on...
+-dontobfuscate
+
+-keep class org.jackowitz.jackson.proguard.Main { *; }
+
+# If we don't shrink, then all fields show up, as expected. Boring.
+#-dontshrink
+
+# With optimizations, the unused field isn't included under either name.
+#-dontoptimize
+
+# Make sure that Jackson annotated method and field properties are kept.
+# Without these, annotated methods and (with the appropriate optimzations)
+# fields can be elided and don't even appear in the serialized JSON!
+#-keepclassmembers class * {
+#  @com.fasterxml.jackson.annotation.JsonProperty <methods>;
+#  @com.fasterxml.jackson.annotation.JsonProperty <fields>;
+#}
+# Alternatively, disable the particular offending optimization.
+#-optimizations !field/removal/writeonly
+
+-whyareyoukeeping class org.jackowitz.jackson.proguard.* { *; }
+-verbose

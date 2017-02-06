@@ -1,0 +1,65 @@
+import proguard.gradle.ProGuardTask
+
+apply plugin: 'java'
+
+group 'org.jackowitz'
+version '0.0.1-SNAPSHOT'
+
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+
+  dependencies {
+    classpath 'net.sf.proguard:proguard-gradle:5.2.1'
+  }
+}
+
+repositories {
+  jcenter()
+}
+
+ext {
+  versions = [
+    jackson: '2.7.8',
+  ]
+  mainClassName = 'org.jackowitz.jackson.proguard.Main'
+}
+dependencies {
+  compile (
+    "com.fasterxml.jackson.core:jackson-core:${versions.jackson}",
+    "com.fasterxml.jackson.core:jackson-annotations:${versions.jackson}",
+    "com.fasterxml.jackson.core:jackson-databind:${versions.jackson}",
+  )
+}
+
+
+jar {
+  manifest {
+    attributes (
+      'Main-Class': mainClassName
+    )
+  }
+}
+
+task proguard(type: proguard.gradle.ProGuardTask, dependsOn: 'jar') {
+  configuration 'proguard.txt'
+
+  injars jar.archivePath
+  outjars "${jar.destinationDir}/proguard/${jar.archiveName}"
+
+  // Pass the dependencies through to ProGuard.
+  libraryjars configurations.compile
+}
+
+task disassemble(type: Exec, dependsOn: 'proguard') {
+  def target = 'org.jackowitz.jackson.proguard.Model'
+  def classpath = proguard.outJarFileCollection.asPath
+  commandLine 'javap', '-private', '-classpath', classpath, target
+}
+
+// Runs the built JAR using dependencies directly from Gradle's cache.
+task runLocal(type: JavaExec, dependsOn: 'proguard') {
+  classpath = configurations.runtime + proguard.outJarFileCollection
+  main = mainClassName
+}
